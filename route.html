@@ -14,20 +14,27 @@
 <body>
   <div id="map"></div>
   <script>
-    // Initialize Map
-    var map = L.map('map').setView([24.7136, 46.6753], 12);
+    // Initialize the map centered in Riyadh
+    var map = L.map('map').setView([24.7580, 46.6900], 12);
 
-    // Load OSM Tiles
+    // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Add Routing (Using OSRM)
-    L.Routing.control({
-      waypoints: [
-        L.latLng(24.7136, 46.6753), // Start Point (Riyadh Center)
-        L.latLng(24.7402, 46.7144)  // End Point (King Salman District)
-      ],
+    // Define start and end locations
+    var startPoint = L.latLng(24.7442, 46.6525);  // An Nuzhah, Riyadh
+    var endPoint = L.latLng(24.7711, 46.7272);    // Prince Sultan University
+
+    // Add markers for start and end locations
+    var startMarker = L.marker(startPoint, { draggable: true }).addTo(map)
+      .bindPopup("Start: An Nuzhah").openPopup();
+    var endMarker = L.marker(endPoint, { draggable: true }).addTo(map)
+      .bindPopup("End: Prince Sultan University").openPopup();
+
+    // Add routing between the points
+    var routingControl = L.Routing.control({
+      waypoints: [startPoint, endPoint],
       routeWhileDragging: true,
       router: L.Routing.osrmv1({
         serviceUrl: 'https://router.project-osrm.org/route/v1'
@@ -36,6 +43,21 @@
         styles: [{ color: "blue", weight: 5 }]
       }
     }).addTo(map);
+
+    // Update route when markers are dragged
+    startMarker.on('dragend', function (e) {
+      routingControl.setWaypoints([
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ]);
+    });
+
+    endMarker.on('dragend', function (e) {
+      routingControl.setWaypoints([
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ]);
+    });
   </script>
 </body>
 </html>
