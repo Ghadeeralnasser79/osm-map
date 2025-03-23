@@ -44,8 +44,9 @@
 
   <script>
     let currentStep = 0;
-    let stepMarkers = [];
+    let routeInstructions = [];
     let routeCoords = [];
+    let userMarker;
 
     const start = L.latLng(24.7442, 46.6525);  // An Nuzhah
     const end = L.latLng(24.7711, 46.7272);    // Prince Sultan University
@@ -56,7 +57,7 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    const userMarker = L.marker(start, { draggable: true }).addTo(map)
+    userMarker = L.marker(start, { draggable: false }).addTo(map)
       .bindPopup("🚗 You are here").openPopup();
 
     const control = L.Routing.control({
@@ -75,35 +76,42 @@
     }).addTo(map);
 
     function updateInstruction(text) {
-      const el = document.getElementById("route-summary");
-      el.innerHTML = `➡️ ${text}`;
+      document.getElementById("route-summary").innerHTML = `➡️ ${text}`;
     }
 
     function getDistance(a, b) {
-      return map.distance(a, b); // returns distance in meters
+      return map.distance(a, b); // in meters
     }
 
+    function goToNextStep() {
+      currentStep++;
+      if (currentStep < routeInstructions.length) {
+        updateInstruction(routeInstructions[currentStep].text);
+      } else {
+        updateInstruction("🎉 You have arrived!");
+      }
+    }
+
+    // When the route is loaded successfully
     control.on('routesfound', function(e) {
       const route = e.routes[0];
-      const instructions = route.instructions;
-      routeCoords = instructions.map(i => i.latLng);
+      routeInstructions = route.instructions;
+      routeCoords = routeInstructions.map(i => i.latLng);
 
       currentStep = 0;
-      updateInstruction(instructions[currentStep].text);
+      updateInstruction(routeInstructions[currentStep].text);
 
+      // Enable clicking to simulate movement
       map.on('click', function(e) {
-        userMarker.setLatLng(e.latlng);
+        const currentLatLng = e.latlng;
+        userMarker.setLatLng(currentLatLng);
 
-        const nextPoint = routeCoords[currentStep];
-        const distance = getDistance(e.latlng, nextPoint);
+        const nextStepLatLng = routeCoords[currentStep];
+        const distance = getDistance(currentLatLng, nextStepLatLng);
 
-        if (distance < 50) { // User is "close enough" to move to next step
-          currentStep++;
-          if (currentStep < instructions.length) {
-            updateInstruction(instructions[currentStep].text);
-          } else {
-            updateInstruction("🎉 You have arrived!");
-          }
+        // If close enough to the next step, go to next
+        if (distance < 50) {
+          goToNextStep();
         }
       });
     });
