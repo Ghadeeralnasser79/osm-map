@@ -5,7 +5,6 @@
   <title>Step-by-Step Navigation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <style>
@@ -44,8 +43,7 @@
 
   <script>
     let currentStep = 0;
-    let routeInstructions = [];
-    let routeCoords = [];
+    let routeSteps = [];
     let userMarker;
 
     const start = L.latLng(24.7442, 46.6525);  // An Nuzhah
@@ -80,36 +78,48 @@
     }
 
     function getDistance(a, b) {
-      return map.distance(a, b); // in meters
+      return map.distance(a, b);
     }
 
     function goToNextStep() {
       currentStep++;
-      if (currentStep < routeInstructions.length) {
-        updateInstruction(routeInstructions[currentStep].text);
+      if (currentStep < routeSteps.length) {
+        updateInstruction(routeSteps[currentStep].instruction);
       } else {
         updateInstruction("🎉 You have arrived!");
       }
     }
 
-    // When the route is loaded successfully
     control.on('routesfound', function(e) {
       const route = e.routes[0];
-      routeInstructions = route.instructions;
-      routeCoords = routeInstructions.map(i => i.latLng);
+
+      // Manually extract steps from coordinates and instructions
+      routeSteps = [];
+      const instructions = route.instructions;
+      if (instructions && instructions.length > 0) {
+        instructions.forEach(step => {
+          routeSteps.push({
+            latLng: step.latLng,
+            instruction: step.text
+          });
+        });
+      }
+
+      if (routeSteps.length === 0) {
+        updateInstruction("❌ No instructions found.");
+        return;
+      }
 
       currentStep = 0;
-      updateInstruction(routeInstructions[currentStep].text);
+      updateInstruction(routeSteps[0].instruction);
 
-      // Enable clicking to simulate movement
       map.on('click', function(e) {
-        const currentLatLng = e.latlng;
-        userMarker.setLatLng(currentLatLng);
+        const userLocation = e.latlng;
+        userMarker.setLatLng(userLocation);
 
-        const nextStepLatLng = routeCoords[currentStep];
-        const distance = getDistance(currentLatLng, nextStepLatLng);
+        const nextPoint = routeSteps[currentStep]?.latLng;
+        const distance = getDistance(userLocation, nextPoint);
 
-        // If close enough to the next step, go to next
         if (distance < 50) {
           goToNextStep();
         }
@@ -118,5 +128,4 @@
   </script>
 </body>
 </html>
-
 
