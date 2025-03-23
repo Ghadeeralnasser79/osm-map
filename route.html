@@ -92,20 +92,18 @@
 
     control.on('routesfound', function(e) {
       const route = e.routes[0];
+      const instructions = route.instructions || [];
 
-      // Manually extract steps from coordinates and instructions
-      routeSteps = [];
-      const instructions = route.instructions;
-      if (instructions && instructions.length > 0) {
-        instructions.forEach(step => {
-          routeSteps.push({
-            latLng: step.latLng,
-            instruction: step.text
-          });
-        });
+      if (!instructions.length && route.legs && route.legs[0].steps) {
+        routeSteps = route.legs[0].steps.map(step => ({
+          latLng: L.latLng(step.maneuver.location[1], step.maneuver.location[0]),
+          instruction: step.maneuver.instruction || step.name
+        }));
+      } else {
+        routeSteps = instructions.map(i => ({ latLng: i.latLng, instruction: i.text }));
       }
 
-      if (routeSteps.length === 0) {
+      if (!routeSteps.length) {
         updateInstruction("❌ No instructions found.");
         return;
       }
@@ -117,9 +115,10 @@
         const userLocation = e.latlng;
         userMarker.setLatLng(userLocation);
 
-        const nextPoint = routeSteps[currentStep]?.latLng;
-        const distance = getDistance(userLocation, nextPoint);
+        const nextStep = routeSteps[currentStep];
+        if (!nextStep) return;
 
+        const distance = getDistance(userLocation, nextStep.latLng);
         if (distance < 50) {
           goToNextStep();
         }
@@ -128,4 +127,3 @@
   </script>
 </body>
 </html>
-
