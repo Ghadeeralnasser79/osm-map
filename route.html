@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Custom OSM Routing</title>
+  <title>OSM Routing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -12,46 +12,44 @@
     html, body {
       margin: 0;
       height: 100%;
-      font-family: sans-serif;
-    }
-
-    #container {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-    }
-
-    #sidebar {
-      width: 320px;
-      padding: 10px;
-      background: white;
-      overflow-y: auto;
-      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-      z-index: 999;
     }
 
     #map {
-      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* 🧭 Directions box in top-right */
+    #directions-box {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      max-width: 300px;
+      max-height: 300px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px;
+      border-radius: 8px;
+      overflow-y: auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      z-index: 1000;
     }
 
     .leaflet-routing-container {
-      display: none !important; /* This Hides Leaflet’s default box */
+      display: none !important; /* Hide default popup */
     }
 
     .step {
-      margin-bottom: 8px;
-      font-size: 14px;
+      margin-bottom: 5px;
       line-height: 1.4;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <div id="sidebar">
-      <h2>Route Directions</h2>
-      <div id="instructions">Loading...</div>
-    </div>
-    <div id="map"></div>
+  <div id="map">
+    <div id="directions-box"><strong>Loading directions...</strong></div>
   </div>
 
   <script>
@@ -66,38 +64,38 @@
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      router: L.Routing.osrmv1({
-        serviceUrl: 'https://router.project-osrm.org/route/v1'
-      }),
+      routeWhileDragging: false,
       lineOptions: {
         styles: [{ color: 'blue', weight: 5 }]
       },
-      routeWhileDragging: false,
       show: false,
       createMarker: function(i, wp) {
         return L.marker(wp).bindPopup(i === 0 ? "Start Point" : "End: Prince Sultan University");
-      }
+      },
+      router: L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1'
+      })
     }).addTo(map);
 
     control.on('routesfound', function(e) {
-      const instructions = document.getElementById('instructions');
-      instructions.innerHTML = "";
+      const box = document.getElementById('directions-box');
+      box.innerHTML = "";
 
       const route = e.routes[0];
       const summary = route.summary;
+
       const header = document.createElement('div');
-      header.innerHTML = `<strong>Distance:</strong> ${(summary.totalDistance / 1000).toFixed(1)} km<br><strong>Time:</strong> ${(summary.totalTime / 60).toFixed(0)} min<br><br>`;
-      instructions.appendChild(header);
+      header.innerHTML = `<strong>🛣 ${summary.totalDistance.toFixed(0) / 1000} km | ⏱ ${(summary.totalTime / 60).toFixed(0)} min</strong><hr>`;
+      box.appendChild(header);
 
       route.instructions.forEach((instr, index) => {
         const step = document.createElement('div');
         step.className = 'step';
         step.textContent = `${index + 1}. ${instr.text}`;
-        instructions.appendChild(step);
+        box.appendChild(step);
       });
     });
   </script>
 </body>
 </html>
-
 
