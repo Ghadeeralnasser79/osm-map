@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>OSM Routing</title>
+  <title>Custom OSM Routing</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -10,9 +10,9 @@
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <style>
     html, body {
-      height: 100%;
       margin: 0;
-      font-family: Arial, sans-serif;
+      height: 100%;
+      font-family: sans-serif;
     }
 
     #container {
@@ -21,14 +21,13 @@
       width: 100vw;
     }
 
-    #directions {
-      width: 30%;
-      max-width: 350px;
-      overflow-y: auto;
+    #sidebar {
+      width: 320px;
       padding: 10px;
-      background-color: #ffffff;
-      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
+      background: white;
+      overflow-y: auto;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      z-index: 999;
     }
 
     #map {
@@ -36,13 +35,22 @@
     }
 
     .leaflet-routing-container {
-      display: none !important; /* Hide default directions box */
+      display: none !important; /* This Hides Leaflet’s default box */
+    }
+
+    .step {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.4;
     }
   </style>
 </head>
 <body>
   <div id="container">
-    <div id="directions"><strong>Loading directions...</strong></div>
+    <div id="sidebar">
+      <h2>Route Directions</h2>
+      <div id="instructions">Loading...</div>
+    </div>
     <div id="map"></div>
   </div>
 
@@ -58,37 +66,38 @@
 
     const control = L.Routing.control({
       waypoints: [start, end],
-      routeWhileDragging: false,
-      lineOptions: {
-        styles: [{ color: "blue", weight: 5 }]
-      },
-      createMarker: function(i, wp, nWps) {
-        return L.marker(wp).bindPopup(i === 0 ? "Start" : "End: Prince Sultan University");
-      },
       router: L.Routing.osrmv1({
         serviceUrl: 'https://router.project-osrm.org/route/v1'
-      })
+      }),
+      lineOptions: {
+        styles: [{ color: 'blue', weight: 5 }]
+      },
+      routeWhileDragging: false,
+      show: false,
+      createMarker: function(i, wp) {
+        return L.marker(wp).bindPopup(i === 0 ? "Start Point" : "End: Prince Sultan University");
+      }
     }).addTo(map);
 
-    control.on('routesfound', function (e) {
-      const instructionsEl = document.getElementById('directions');
-      instructionsEl.innerHTML = '';
+    control.on('routesfound', function(e) {
+      const instructions = document.getElementById('instructions');
+      instructions.innerHTML = "";
 
-      const routes = e.routes;
-      const summary = routes[0].summary;
-      const instructions = routes[0].instructions || routes[0].segments;
+      const route = e.routes[0];
+      const summary = route.summary;
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>Distance:</strong> ${(summary.totalDistance / 1000).toFixed(1)} km<br><strong>Time:</strong> ${(summary.totalTime / 60).toFixed(0)} min<br><br>`;
+      instructions.appendChild(header);
 
-      const header = document.createElement('h3');
-      header.textContent = `📍 Distance: ${(summary.totalDistance / 1000).toFixed(1)} km | ⏱️ Time: ${(summary.totalTime / 60).toFixed(0)} min`;
-      instructionsEl.appendChild(header);
-
-      routes[0].instructions.forEach((instr, i) => {
+      route.instructions.forEach((instr, index) => {
         const step = document.createElement('div');
-        step.textContent = `${i + 1}. ${instr.text}`;
-        instructionsEl.appendChild(step);
+        step.className = 'step';
+        step.textContent = `${index + 1}. ${instr.text}`;
+        instructions.appendChild(step);
       });
     });
   </script>
 </body>
 </html>
+
 
