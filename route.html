@@ -2,127 +2,61 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Step-by-Step Navigation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSM Routing with OSRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: sans-serif;
-    }
-
-    #top-info {
-      width: 100%;
-      background: #ffffff;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
-    }
-
-    #map {
-      width: 100%;
-      height: calc(100% - 60px);
-    }
-
-    .leaflet-routing-container {
-      display: none !important;
-    }
+    #map { height: 100vh; width: 100%; }
   </style>
 </head>
 <body>
-  <div id="top-info">
-    <div id="route-summary">Loading route...</div>
-  </div>
   <div id="map"></div>
-
   <script>
-    let currentStep = 0;
-    let routeSteps = [];
-    let userMarker;
+    // Initialize the map centered in Riyadh
+    var map = L.map('map').setView([24.7580, 46.6900], 12);
 
-    const start = L.latLng(24.7442, 46.6525);  // An Nuzhah
-    const end = L.latLng(24.7711, 46.7272);    // Prince Sultan University
-
-    const map = L.map('map').setView(start, 13);
-
+    // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    userMarker = L.marker(start, { draggable: false }).addTo(map)
-      .bindPopup("🚗 You are here").openPopup();
+    // Define start and end locations
+    var startPoint = L.latLng(24.7442, 46.6525);  // An Nuzhah, Riyadh
+    var endPoint = L.latLng(24.7711, 46.7272);    // Prince Sultan University
 
-    const control = L.Routing.control({
-      waypoints: [start, end],
-      show: false,
-      routeWhileDragging: false,
-      lineOptions: {
-        styles: [{ color: 'blue', weight: 5 }]
-      },
-      createMarker: function(i, wp) {
-        return L.marker(wp).bindPopup(i === 0 ? "Start" : "End");
-      },
+    // Add markers for start and end locations
+    var startMarker = L.marker(startPoint, { draggable: true }).addTo(map)
+      .bindPopup("Start: An Nuzhah").openPopup();
+    var endMarker = L.marker(endPoint, { draggable: true }).addTo(map)
+      .bindPopup("End: Prince Sultan University").openPopup();
+
+    // Add routing between the points
+    var routingControl = L.Routing.control({
+      waypoints: [startPoint, endPoint],
+      routeWhileDragging: true,
       router: L.Routing.osrmv1({
         serviceUrl: 'https://router.project-osrm.org/route/v1'
-      })
+      }),
+      lineOptions: {
+        styles: [{ color: "blue", weight: 5 }]
+      }
     }).addTo(map);
 
-    function updateInstruction(text) {
-      document.getElementById("route-summary").innerHTML = `➡️ ${text}`;
-    }
+    // Update route when markers are dragged
+    startMarker.on('dragend', function (e) {
+      routingControl.setWaypoints([
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ]);
+    });
 
-    function getDistance(a, b) {
-      return map.distance(a, b);
-    }
-
-    function goToNextStep() {
-      currentStep++;
-      if (currentStep < routeSteps.length) {
-        updateInstruction(routeSteps[currentStep].instruction);
-      } else {
-        updateInstruction("🎉 You have arrived!");
-      }
-    }
-
-    control.on('routesfound', function(e) {
-      const route = e.routes[0];
-      const instructions = route.instructions || [];
-
-      if (!instructions.length && route.legs && route.legs[0].steps) {
-        routeSteps = route.legs[0].steps.map(step => ({
-          latLng: L.latLng(step.maneuver.location[1], step.maneuver.location[0]),
-          instruction: step.maneuver.instruction || step.name
-        }));
-      } else {
-        routeSteps = instructions.map(i => ({ latLng: i.latLng, instruction: i.text }));
-      }
-
-      if (!routeSteps.length) {
-        updateInstruction("❌ No instructions found.");
-        return;
-      }
-
-      currentStep = 0;
-      updateInstruction(routeSteps[0].instruction);
-
-      map.on('click', function(e) {
-        const userLocation = e.latlng;
-        userMarker.setLatLng(userLocation);
-
-        const nextStep = routeSteps[currentStep];
-        if (!nextStep) return;
-
-        const distance = getDistance(userLocation, nextStep.latLng);
-        if (distance < 50) {
-          goToNextStep();
-        }
-      });
+    endMarker.on('dragend', function (e) {
+      routingControl.setWaypoints([
+        startMarker.getLatLng(),
+        endMarker.getLatLng()
+      ]);
     });
   </script>
 </body>
