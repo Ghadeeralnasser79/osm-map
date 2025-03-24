@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>OSM Map - Riyadh Route</title>
+  <title>OSM Map - Al Nuzhah to Prince Sultan University</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet + Routing Machine -->
+  <!-- Leaflet CSS and Routing -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -13,69 +13,65 @@
 
   <style>
     body, html { margin: 0; padding: 0; }
-    #appbar {
-      background: #4a90e2;
-      color: white;
+    #map { height: 100vh; width: 100%; }
+    #directions {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
       padding: 10px;
-      font-weight: bold;
-      text-align: center;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      z-index: 1000;
       font-family: sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
     }
-    #map { height: calc(100vh - 50px); width: 100%; }
   </style>
 </head>
 <body>
 
-  <!-- Top AppBar -->
-  <div id="appbar">📍 Loading directions...</div>
+<div id="directions">📍 Tap the button to get directions</div>
+<div id="map"></div>
 
-  <!-- Map Container -->
-  <div id="map"></div>
+<script>
+  const map = L.map('map').setView([24.76, 46.68], 13);
 
-  <script>
-    const appBar = document.getElementById("appbar");
+  // Load OSM Tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-    // Initialize map
-    const map = L.map('map').setView([24.7600, 46.6800], 13); // center view
+  const directionsDiv = document.getElementById("directions");
 
-    // Add OSM tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+  const control = L.Routing.control({
+    waypoints: [
+      L.latLng(24.774265, 46.738586),    // Al Nuzhah
+      L.latLng(24.760381, 46.630455)     // Prince Sultan University
+    ],
+    router: L.Routing.osrmv1({ language: 'en', profile: 'car' }),
+    routeWhileDragging: false,
+    draggableWaypoints: false,
+    addWaypoints: false,
+    show: false,
+    createMarker: function(i, wp) {
+      const labels = ['Start: Al Nuzhah', 'End: Prince Sultan University'];
+      return L.marker(wp.latLng).bindPopup(labels[i]).openPopup();
+    }
+  }).addTo(map);
 
-    // Set up routing control
-    const control = L.Routing.control({
-      waypoints: [
-        L.latLng(24.774265, 46.738586), // 🟢 Al-Nuzhah
-        L.latLng(24.745716, 46.629612)  // 🏁 Prince Sultan University
-      ],
-      router: L.Routing.osrmv1({ language: 'en', profile: 'car' }),
-      routeWhileDragging: false,
-      draggableWaypoints: false,
-      addWaypoints: false,
-      show: false,
-      createMarker: function() { return null; }
-    }).addTo(map);
-
-    // Handle route and show instructions step by step
-    control.on('routesfound', function(e) {
-      const steps = e.routes[0].instructions || [];
-      let current = 0;
-
-      function updateInstruction() {
-        if (current < steps.length) {
-          appBar.innerText = `➡️ ${steps[current].text}`;
-          current++;
-          setTimeout(updateInstruction, 5000); // 5 sec between steps
-        } else {
-          appBar.innerText = "✅ You have arrived at your destination.";
-        }
-      }
-
-      // Start the instruction loop
-      updateInstruction();
+  control.on('routesfound', function(e) {
+    const instructions = e.routes[0].instructions;
+    let output = `<strong>🧭 Directions:</strong><br/><ul>`;
+    instructions.forEach((step) => {
+      output += `<li>${step.text} (${step.distance.toFixed(0)} m)</li>`;
     });
-  </script>
+    output += `</ul>`;
+    directionsDiv.innerHTML = output;
+  });
+</script>
+
 </body>
 </html>
 
