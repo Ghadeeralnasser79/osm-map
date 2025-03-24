@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>OSM Map - King Salman District</title>
+  <title>OSM Map - Riyadh Route</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet + Routing Machine -->
@@ -26,64 +26,56 @@
 </head>
 <body>
 
-  <!-- Top Bar -->
-  <div id="appbar">📍 Loading route...</div>
+  <!-- Top AppBar -->
+  <div id="appbar">📍 Loading directions...</div>
 
   <!-- Map Container -->
   <div id="map"></div>
 
   <script>
+    const appBar = document.getElementById("appbar");
+
     // Initialize map
-    var map = L.map('map').setView([24.74028, 46.71444], 13);
+    const map = L.map('map').setView([24.7600, 46.6800], 13); // center view
 
     // Add OSM tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Define route from Al-Nuzhah to Prince Sultan University
-    var control = L.Routing.control({
+    // Set up routing control
+    const control = L.Routing.control({
       waypoints: [
-        L.latLng(24.774265, 46.738586), // Al-Nuzhah
-        L.latLng(24.745716, 46.629612)  // Prince Sultan University
+        L.latLng(24.774265, 46.738586), // 🟢 Al-Nuzhah
+        L.latLng(24.745716, 46.629612)  // 🏁 Prince Sultan University
       ],
+      router: L.Routing.osrmv1({ language: 'en', profile: 'car' }),
       routeWhileDragging: false,
-      show: false,
-      addWaypoints: false,
       draggableWaypoints: false,
+      addWaypoints: false,
+      show: false,
       createMarker: function() { return null; }
     }).addTo(map);
 
-    // Display step-by-step directions
+    // Handle route and show instructions step by step
     control.on('routesfound', function(e) {
-      var instructions = [];
-      var i = 0;
+      const steps = e.routes[0].instructions || [];
+      let current = 0;
 
-      e.routes[0].instructions = [];
-
-      // Collect all steps
-      e.routes[0].instructions = e.routes[0].instructions.concat(
-        e.routes[0].instructions.length === 0 ? 
-        e.routes[0].coordinates.map((coord, idx) => ({
-          text: `Step ${idx + 1}`,
-          coord: coord
-        })) : e.routes[0].instructions
-      );
-
-      const steps = e.routes[0].instructions;
-
-      function showNextInstruction() {
-        if (i < steps.length) {
-          document.getElementById("appbar").innerText = `➡️ ${steps[i].text || "Continue..."}`;
-          i++;
-          setTimeout(showNextInstruction, 4000); // update every 4 sec
+      function updateInstruction() {
+        if (current < steps.length) {
+          appBar.innerText = `➡️ ${steps[current].text}`;
+          current++;
+          setTimeout(updateInstruction, 5000); // 5 sec between steps
         } else {
-          document.getElementById("appbar").innerText = "✅ You have arrived!";
+          appBar.innerText = "✅ You have arrived at your destination.";
         }
       }
 
-      showNextInstruction();
+      // Start the instruction loop
+      updateInstruction();
     });
   </script>
 </body>
 </html>
+
