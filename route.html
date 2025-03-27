@@ -15,7 +15,7 @@
   <div id="map"></div>
   <script>
     // Initialize the map centered in Riyadh
-    var map = L.map('map').setView([24.7580, 46.6900], 12);
+    var map = L.map('map').setView([24.7500, 46.7100], 14);
 
     // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -23,14 +23,14 @@
     }).addTo(map);
 
     // Define start and end locations
-    var startPoint = L.latLng(24.7442, 46.6525);  // An Nuzhah, Riyadh
-    var endPoint = L.latLng(24.7711, 46.7272);    // Prince Sultan University
+    var startPoint = L.latLng(24.7508, 46.7120);  // Converted from 24°45'02.8"N 46°42'43.2"E
+    var endPoint = L.latLng(24.7340, 46.7002);    // Converted from 24°44'02.3"N 46°42'00.6"E
 
     // Add markers for start and end locations
     var startMarker = L.marker(startPoint, { draggable: true }).addTo(map)
-      .bindPopup("Start: An Nuzhah").openPopup();
+      .bindPopup("Start Location").openPopup();
     var endMarker = L.marker(endPoint, { draggable: true }).addTo(map)
-      .bindPopup("End: Prince Sultan University").openPopup();
+      .bindPopup("End Location").openPopup();
 
     // Add routing between the points
     var routingControl = L.Routing.control({
@@ -45,14 +45,14 @@
     }).addTo(map);
 
     // Update route when markers are dragged
-    startMarker.on('dragend', function (e) {
+    startMarker.on('dragend', function () {
       routingControl.setWaypoints([
         startMarker.getLatLng(),
         endMarker.getLatLng()
       ]);
     });
 
-    endMarker.on('dragend', function (e) {
+    endMarker.on('dragend', function () {
       routingControl.setWaypoints([
         startMarker.getLatLng(),
         endMarker.getLatLng()
