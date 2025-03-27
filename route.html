@@ -8,14 +8,28 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
   <style>
+    body, html { margin: 0; padding: 0; }
     #map { height: 100vh; width: 100%; }
+    #directions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px;
+      max-width: 250px;
+      font-size: 14px;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
+  <div id="directions">Loading directions...</div>
   <div id="map"></div>
+  
   <script>
     // Initialize the map centered in Riyadh
-    var map = L.map('map').setView([24.7580, 46.6900], 12);
+    var map = L.map('map').setView([24.745, 46.705], 14);
 
     // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -23,42 +37,60 @@
     }).addTo(map);
 
     // Define start and end locations
-    var startPoint = L.latLng(24.750417, 46.711944);  // Start point (An Nuzhah, Riyadh)
-var endPoint = L.latLng(24.740556, 46.694417);    // End point (Prince Sultan University)
+    var startPoint = L.latLng(24.74564, 46.70269);  // 24°44'44.3"N 46°42'09.7"E
+    var endPoint = L.latLng(24.7340, 46.7002);      // 24°44'02.3"N 46°42'00.6"E
 
+    // Custom car icon
+    var carIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/1086/1086477.png',
+      iconSize: [40, 40]
+    });
 
     // Add markers for start and end locations
-    var startMarker = L.marker(startPoint, { draggable: true }).addTo(map)
-      .bindPopup("Start: An Nuzhah").openPopup();
-    var endMarker = L.marker(endPoint, { draggable: true }).addTo(map)
-      .bindPopup("End: Prince Sultan University").openPopup();
+    var startMarker = L.marker(startPoint, { icon: carIcon }).addTo(map);
+    var endMarker = L.marker(endPoint).addTo(map).bindPopup("Destination");
 
     // Add routing between the points
-    var routingControl = L.Routing.control({
+    var control = L.Routing.control({
       waypoints: [startPoint, endPoint],
-      routeWhileDragging: true,
+      routeWhileDragging: false,
       router: L.Routing.osrmv1({
         serviceUrl: 'https://router.project-osrm.org/route/v1'
       }),
-      lineOptions: {
-        styles: [{ color: "blue", weight: 5 }]
-      }
+      lineOptions: { styles: [{ color: "blue", weight: 5 }] },
+      createMarker: function() { return null; } // Remove default markers
     }).addTo(map);
 
-    // Update route when markers are dragged
-    startMarker.on('dragend', function (e) {
-      routingControl.setWaypoints([
-        startMarker.getLatLng(),
-        endMarker.getLatLng()
-      ]);
+    // Move the car step by step along the route
+    control.on('routesfound', function(e) {
+      var route = e.routes[0].coordinates;
+      var instructions = e.routes[0].instructions || [];
+      var currentStep = 0;
+
+      // Update the directions box
+      function updateDirections(step) {
+        if (instructions[step]) {
+          document.getElementById("directions").innerText = instructions[step].text;
+        } else {
+          document.getElementById("directions").innerText = "You have arrived!";
+        }
+      }
+
+      // Function to move the car
+      function moveCar() {
+        if (currentStep < route.length) {
+          var latlng = L.latLng(route[currentStep].lat, route[currentStep].lng);
+          startMarker.setLatLng(latlng); // Move car marker
+          map.setView(latlng, 15); // Follow the car
+          updateDirections(currentStep); // Update directions
+          currentStep++;
+          setTimeout(moveCar, 1000); // Move every second
+        }
+      }
+
+      moveCar(); // Start movement
     });
 
-    endMarker.on('dragend', function (e) {
-      routingControl.setWaypoints([
-        startMarker.getLatLng(),
-        endMarker.getLatLng()
-      ]);
-    });
   </script>
 </body>
 </html>
