@@ -15,7 +15,7 @@
   <div id="map"></div>
   <script>
     // Initialize the map centered in Riyadh
-    var map = L.map('map').setView([24.7500, 46.7100], 14);
+    var map = L.map('map').setView([24.7450, 46.7060], 14);
 
     // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -24,13 +24,13 @@
 
     // Define start and end locations
     var startPoint = L.latLng(24.7508, 46.7120);  // Converted from 24°45'02.8"N 46°42'43.2"E
-    var endPoint = L.latLng(24.7340, 46.7002);    // Corrected from 24°44'02.3"N 46°42'00.6"E
+    var endPoint = L.latLng(24.7340, 46.7002);    // Converted from 24°44'02.3"N 46°42'00.6"E
 
     // Add markers for start and end locations
     var startMarker = L.marker(startPoint, { draggable: true }).addTo(map)
-      .bindPopup("Start Location").openPopup();
+      .bindPopup("Start: 24°45'02.8\"N 46°42'43.2\"E").openPopup();
     var endMarker = L.marker(endPoint, { draggable: true }).addTo(map)
-      .bindPopup("End Location").openPopup();
+      .bindPopup("End: 24°44'02.3\"N 46°42'00.6\"E").openPopup();
 
     // Add routing between the points
     var routingControl = L.Routing.control({
