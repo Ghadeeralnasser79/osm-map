@@ -21,25 +21,10 @@
       font-size: 14px;
       border-radius: 5px;
     }
-    #start-btn {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 18px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    #start-btn:hover { background: #0056b3; }
   </style>
 </head>
 <body>
-  <div id="directions">Press "Start" to begin the trip</div>
-  <button id="start-btn">Start</button>
+  <div id="directions">Loading directions...</div>
   <div id="map"></div>
   
   <script>
@@ -53,7 +38,7 @@
 
     // Define start and end locations
     var startPoint = L.latLng(24.74564, 46.70269);  // 24°44'44.3"N 46°42'09.7"E
-    var endPoint = L.latLng(24.7340, 46.7002);      // 24°44'02.3"N 46°42'00.6"E
+    var endPoint = L.latLng(24.740556, 46.694417);      // 24°44'02.3"N 46°42'00.6"E
 
     // Custom car icon
     var carIcon = L.icon({
@@ -76,45 +61,34 @@
       createMarker: function() { return null; } // Remove default markers
     }).addTo(map);
 
-    var route = [];
-    var instructions = [];
-    var currentStep = 0;
-    var started = false;
-
-    // Capture route details once found
+    // Move the car step by step along the route
     control.on('routesfound', function(e) {
-      route = e.routes[0].coordinates;
-      instructions = e.routes[0].instructions || [];
-      document.getElementById("directions").innerText = "Press 'Start' to begin the trip";
-    });
+      var route = e.routes[0].coordinates;
+      var instructions = e.routes[0].instructions || [];
+      var currentStep = 0;
 
-    // Function to update directions
-    function updateDirections(step) {
-      if (instructions[step]) {
-        document.getElementById("directions").innerText = instructions[step].text;
-      } else {
-        document.getElementById("directions").innerText = "You have arrived!";
+      // Update the directions box
+      function updateDirections(step) {
+        if (instructions[step]) {
+          document.getElementById("directions").innerText = instructions[step].text;
+        } else {
+          document.getElementById("directions").innerText = "You have arrived!";
+        }
       }
-    }
 
-    // Function to move the car
-    function moveCar() {
-      if (currentStep < route.length) {
-        var latlng = L.latLng(route[currentStep].lat, route[currentStep].lng);
-        startMarker.setLatLng(latlng); // Move car marker
-        map.setView(latlng, 15); // Follow the car
-        updateDirections(currentStep); // Update directions
-        currentStep++;
-        setTimeout(moveCar, 1000); // Move every second
+      // Function to move the car
+      function moveCar() {
+        if (currentStep < route.length) {
+          var latlng = L.latLng(route[currentStep].lat, route[currentStep].lng);
+          startMarker.setLatLng(latlng); // Move car marker
+          map.setView(latlng, 15); // Follow the car
+          updateDirections(currentStep); // Update directions
+          currentStep++;
+          setTimeout(moveCar, 1000); // Move every second
+        }
       }
-    }
 
-    // Start button event
-    document.getElementById("start-btn").addEventListener("click", function() {
-      if (!started && route.length > 0) {
-        started = true;
-        moveCar();
-      }
+      moveCar(); // Start movement
     });
 
   </script>
